@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.chenyanwu.erp.erpframework.dao.rbac.ErpMenuMapper">
+    <resultMap id="BaseResultMap" type="com.chenyanwu.erp.erpframework.entity.rbac.ErpMenu">
+                                                                                                                                                                                                                                                                                                
+                                                <result column="level" property="level" jdbcType="TINYINT"/>
+                                                            <result column="icon" property="icon" jdbcType="VARCHAR"/>
+                                                            <result column="permission" property="permission" jdbcType="VARCHAR"/>
+                                                            <result column="sort" property="sort" jdbcType="SMALLINT"/>
+                                                            <result column="type" property="type" jdbcType="BIT"/>
+                                                            <result column="url" property="url" jdbcType="VARCHAR"/>
+                                                            <result column="update_date" property="updateDate" jdbcType="DATE"/>
+                                                            <result column="target" property="target" jdbcType="BIT"/>
+                                                            <result column="create_by" property="createBy" jdbcType="VARCHAR"/>
+                                                            <result column="parent_id" property="parentId" jdbcType="VARCHAR"/>
+                                                            <result column="name" property="name" jdbcType="VARCHAR"/>
+                                                            <result column="id" property="id" jdbcType="CHAR"/>
+                                                            <result column="create_date" property="createDate" jdbcType="DATE"/>
+                                                            <result column="update_by" property="updateBy" jdbcType="VARCHAR"/>
+                    
+    </resultMap>
+
+
+    <resultMap id="SysRoleTreeMenuMap" type="com.chenyanwu.erp.erpframework.entity.dtree.Dtree">
+        <result property="title" column="name" jdbcType="VARCHAR"/>
+        <result property="id" column="id" jdbcType="VARCHAR"/>
+        <result property="parentId" column="parent_id" jdbcType="VARCHAR"/>
+        <result property="level" column="level" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="getSysRoleTreeMenus" resultMap="SysRoleTreeMenuMap" parameterType="java.lang.String" >
+        select distinct m.id as id,
+        m.name as name,
+        m.parent_id as parent_id,
+        m.level as level
+        from erp_menu m
+        <if test="roleId != null and roleId != ''">
+            INNER JOIN erp_role_menu rm on rm.menu_id = m.id
+        </if>
+        <if test="roleId != null and roleId != ''">
+            and rm.role_id = #{roleId}
+        </if>
+    </select>
+
+    <resultMap id="showMenuMap" type="com.chenyanwu.erp.erpframework.entity.vo.ShowMenu">
+        <result property="id" column="id"/>
+        <result property="pid" column="pid"/>
+        <result property="title" column="title"/>
+        <result property="icon" column="icon"/>
+        <result property="href" column="href"/>
+        <collection property="children" select="selectShowMenuByUser" column="{parentId = id,userId = myuserId}">
+        </collection>
+    </resultMap>
+
+    <select id="selectShowMenuByUser" resultMap="showMenuMap" parameterType="java.util.Map">
+        select distinct em.id as "id", em.parent_id as "pid", em.name as "title", em.icon,
+        em.url as "href",em.sort, #{userId} as "myuserId"
+        FROM erp_menu em
+        LEFT JOIN erp_role_menu erm on erm.menu_id = em.id
+        LEFT JOIN erp_role er on er.id = erm.role_id
+        LEFT JOIN erp_role_user eru on eru.role_id = er.id
+        LEFT JOIN erp_user eu on eu.id = eru.user_id
+        WHERE eu.id = #{userId}
+        <choose>
+            <when test="parentId != null and parentId !='' ">
+                and em.parent_id = #{parentId}
+            </when>
+            <otherwise>
+                and (em.parent_id is NULL or em.parent_id='')
+            </otherwise>
+        </choose>
+        order by em.sort
+    </select>
+</mapper>
